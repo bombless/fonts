@@ -5,7 +5,7 @@ use glutin::{
 };
 use rusttype::gpu_cache::Cache;
 use rusttype::{point, vector, Font, PositionedGlyph, Rect, Scale};
-use std::borrow::Cow;
+use std::{borrow::Cow, path::PathBuf};
 use std::env;
 use std::error::Error;
 
@@ -50,12 +50,16 @@ fn layout_paragraph<'a>(
     result
 }
 
-pub fn main(font_data: &[u8]) -> Result<(), Box<dyn Error>> {
+pub fn main(font_data: Vec<(PathBuf, Vec<u8>)>) -> Result<(), Box<dyn Error>> {
     if cfg!(target_os = "linux") && env::var("WINIT_UNIX_BACKEND").is_err() {
         env::set_var("WINIT_UNIX_BACKEND", "x11");
     }
 
-    let font = Font::try_from_vec(font_data.into()).unwrap();
+    let fonts = font_data.into_iter().filter_map(|(path, buffer)| {
+        Font::try_from_vec(buffer).map(|x| (path, x))
+    }).collect::<Vec<_>>();
+
+    let mut font_index = 0;
 
     let window = glium::glutin::window::WindowBuilder::new()
         .with_inner_size(glium::glutin::dpi::PhysicalSize::new(512, 512))
@@ -114,13 +118,6 @@ pub fn main(font_data: &[u8]) -> Result<(), Box<dyn Error>> {
         glium::texture::UncompressedFloatFormat::U8,
         glium::texture::MipmapsOption::NoMipmap,
     )?;
-    let mut text: String = "A japanese poem:\r
-\r
-色は匂へど散りぬるを我が世誰ぞ常ならむ有為の奥山今日越えて浅き夢見じ酔ひもせず\r
-\r
-Feel free to type out some text, and delete it with Backspace. \
-You can also try resizing this window."
-        .into();
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -134,12 +131,8 @@ You can also try resizing this window."
                     ..
                 }
                 | WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::ReceivedCharacter(c) => {
-                    match c {
-                        '\u{8}' => { text.pop(); },
-                        _ if c != '\u{7f}' => text.push(c),
-                        _ => {}
-                    }
+                WindowEvent::ReceivedCharacter(_c) => {
+                    font_index = (font_index + 1) % fonts.len();
                     display.gl_window().window().request_redraw();
                 }
                 _ => (),
@@ -153,7 +146,14 @@ You can also try resizing this window."
                     .into();
                 let scale = scale as f32;
 
-                let glyphs = layout_paragraph(&font, Scale::uniform(24.0 * scale), width, &text);
+                let text = format!(
+                    "{}/{}\r{:?}\r色は匂へど散りぬるを我が世誰ぞ常ならむ有為の奥山今日越えて浅き夢見じ酔ひもせず",
+                    font_index,
+                    fonts.len(),
+                    fonts[font_index].0
+                );
+
+                let glyphs = layout_paragraph(&fonts[font_index].1, Scale::uniform(24.0 * scale), width, &text);
                 for glyph in &glyphs {
                     cache.queue_glyph(0, glyph.clone());
                 }

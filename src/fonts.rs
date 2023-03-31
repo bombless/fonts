@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::fs::{self, File};
+use std::fs::read;
 use walkdir::WalkDir;
 
 /// Searches for fonts.
@@ -62,7 +62,7 @@ impl FontSearcher {
 
     /// Index the fonts in the file at the given path.
     pub fn search_file(&mut self, path: impl AsRef<Path>) {
-        let content = fs::read(path.as_ref()).unwrap();
+        let content = read(path.as_ref()).unwrap();
         self.fonts.push((path.as_ref().to_path_buf(), content));
     }
 }
