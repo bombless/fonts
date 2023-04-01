@@ -10,4 +10,5 @@ dirs = "5.0.0"
 glium = "0.32.1"
 memmap2 = "0.5.10"
 rusttype = { version = "0.9.3", features = ["gpu_cache"] }
+ttf-parser = "0.18.1"
 walkdir = "2.3.3"

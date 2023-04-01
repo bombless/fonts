@@ -63,6 +63,17 @@ impl FontSearcher {
     /// Index the fonts in the file at the given path.
     pub fn search_file(&mut self, path: impl AsRef<Path>) {
         let content = read(path.as_ref()).unwrap();
+        let count = ttf_parser::fonts_in_collection(&content).unwrap_or(1);
+        for index in 0..count {
+            if let Ok(x) = ttf_parser::Face::parse(&content, index) {
+                for x in x.names() {
+                    if x.to_string().map(|x| x.starts_with("Sti")) != Some(true) {
+                        continue;
+                    }
+                    println!("{}", x.to_string().unwrap_or_else(|| format!("{:?}", x)))
+                }
+            }        
+        }
         self.fonts.push((path.as_ref().to_path_buf(), content));
     }
 }
