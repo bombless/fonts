@@ -2,7 +2,6 @@ mod gpu_cache;
 mod font_searcher;
 mod fc;
 mod font;
-mod ft;
 
 use std::path::Path;
 use std::fs::read;
